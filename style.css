@@ -1,0 +1,199 @@
+/* Reset básico e fontes */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+}
+
+h1, h2, h3 {
+    color: #5a3e36; /* Um tom marrom para títulos */
+}
+
+a {
+    text-decoration: none;
+    color: #d4a55d; /* Um tom dourado para links */
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Evita espaços extras abaixo da imagem */
+}
+
+/* Cabeçalho */
+header {
+    background-color: #5a3e36; /* Marrom escuro */
+    color: #fff;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #d4a55d; /* Detalhe dourado */
+}
+
+header .logo-container {
+    display: flex;
+    align-items: center;
+}
+
+header .logo {
+    max-height: 50px; /* Ajuste conforme necessário */
+    margin-right: 1rem;
+    border-radius: 5px; /* Borda levemente arredondada */
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #fff; /* Nome do restaurante em branco */
+}
+
+/* Navegação */
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+}
+
+nav ul li {
+    margin-left: 1.5rem;
+}
+
+nav ul li a {
+    color: #fff; /* Links de navegação em branco */
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+nav ul li a:hover {
+    color: #d4a55d; /* Cor dourada no hover */
+    text-decoration: none;
+}
+
+/* Conteúdo Principal */
+main {
+    max-width: 900px; /* Limita a largura para melhor leitura */
+    margin: 2rem auto; /* Centraliza o conteúdo e adiciona margem */
+    padding: 0 1rem; /* Espaçamento lateral */
+}
+
+section {
+    background-color: #fff;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra suave */
+}
+
+section h2 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+    font-size: 1.8rem;
+}
+
+/* Estilo dos Pratos */
+.prato {
+    display: flex; /* Alinha imagem e texto lado a lado */
+    align-items: center; /* Centraliza verticalmente */
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px dashed #eee; /* Linha separadora sutil */
+}
+
+.prato:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none; /* Remove a borda do último item */
+}
+
+.prato img {
+    width: 150px; /* Largura fixa para a imagem */
+    height: 100px; /* Altura fixa */
+    object-fit: cover; /* Garante que a imagem cubra a área sem distorcer */
+    margin-right: 1.5rem;
+    border-radius: 5px; /* Cantos arredondados */
+    border: 1px solid #ddd;
+}
+
+.prato-info {
+    flex: 1; /* Permite que o texto ocupe o espaço restante */
+}
+
+.prato h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+}
+
+.prato p {
+    margin: 0.3rem 0;
+    font-size: 0.95rem;
+    color: #555;
+}
+
+.prato .preco {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #333; /* Cor mais escura para o preço */
+    margin-top: 0.5rem;
+}
+
+/* Rodapé */
+footer {
+    background-color: #333;
+    color: #eee;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    margin-top: 2rem;
+    border-top: 3px solid #555;
+}
+
+footer p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+/* Responsividade básica (Exemplo) */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column; /* Empilha logo/nome e navegação */
+        text-align: center;
+    }
+
+    header .logo-container {
+        margin-bottom: 1rem;
+    }
+
+    nav ul {
+        justify-content: center; /* Centraliza itens de navegação */
+    }
+
+    nav ul li {
+        margin: 0 0.8rem; /* Ajusta espaçamento */
+    }
+
+    .prato {
+        flex-direction: column; /* Empilha imagem e texto em telas menores */
+        align-items: flex-start; /* Alinha itens à esquerda */
+        text-align: left;
+    }
+
+    .prato img {
+        width: 100%; /* Imagem ocupa toda a largura */
+        height: auto; /* Altura automática */
+        max-width: 250px; /* Limita a largura máxima */
+        margin-right: 0;
+        margin-bottom: 1rem; /* Espaço abaixo da imagem */
+    }
+}
