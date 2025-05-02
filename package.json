@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "pspdfkit": "^2024.8.2",
+    "zetajs": "^1.1.0"
+  }
+}

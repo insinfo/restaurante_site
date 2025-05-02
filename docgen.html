@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<!--docgen.html-->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Trabalhos Acadêmicos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- CKEditor 5 CSS (Necessário para o UMD Build também) -->
+    <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/45.0.0/ckeditor5.css" />
+    <!-- Mantive o link original também, caso haja estilos específicos -->
+    <link href="https://cdn.jsdelivr.net/npm/ckeditor5@45.0.0/dist/ckeditor5.min.css" rel="stylesheet">
+
+
+    <style>
+        body {
+            padding-top: 20px;
+        }
+
+        #document-preview {
+            border: 1px solid #ccc;
+            min-height: 80vh;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+
+        .toolbox-button {
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .preview-element {
+            border: 1px dashed #adb5bd;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .preview-element small {
+            color: #6c757d;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .preview-element-content {
+            max-height: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .ck-editor__editable {
+            min-height: 200px;
+        }
+
+        .remove-element-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 0.1rem 0.3rem;
+            font-size: 0.8rem;
+            line-height: 1;
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <h1 class="mb-4 text-center">Gerador de Trabalhos Acadêmicos (ABNT)</h1>
+
+        <div class="row">
+            <div class="col-md-3 col-xxl-2">
+                <h2>Adicionar Elementos</h2>
+                <div id="toolbox">
+                    <h6>Capa / Folha de Rosto</h6>
+                    <button class="btn btn-secondary toolbox-button" data-type="logo">Logo Instituição</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="instituicao">Nome Instituição</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="curso">Nome Curso</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="aluno">Nome Aluno(a)</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="tituloTrabalho">Título do
+                        Trabalho</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="disciplina">Nome Disciplina</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="professor">Nome Professor(a)</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="cidade">Cidade</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="estado">Estado</button>
+                    <button class="btn btn-secondary toolbox-button" data-type="ano">Ano</button>
+
+                    <hr>
+                    <h6>Estrutura</h6>
+                    <button class="btn btn-info toolbox-button" data-type="resumo">RESUMO</button>
+                    <button class="btn btn-info toolbox-button" data-type="introducao">INTRODUÇÃO</button>
+                    <button class="btn btn-info toolbox-button" data-type="desenvolvimento">DESENVOLVIMENTO</button>
+                    <button class="btn btn-info toolbox-button" data-type="metodos">MÉTODOS</button>
+                    <button class="btn btn-info toolbox-button" data-type="resultados">RESULTADOS</button>
+                    <button class="btn btn-info toolbox-button" data-type="conclusao">CONCLUSÃO</button>
+                    <button class="btn btn-info toolbox-button" data-type="referencias">REFERÊNCIAS</button>
+
+                    <hr>
+                    <h6>Conteúdo</h6>
+                    <button class="btn btn-light toolbox-button" data-type="subtitulo">Subtítulo</button>
+                    <button class="btn btn-light toolbox-button" data-type="paragrafo">Parágrafo</button>
+                    <button class="btn btn-light toolbox-button" data-type="lista">Lista (Numerada/Marcadores)</button>
+                    <button class="btn btn-light toolbox-button" data-type="imagem">Imagem</button>
+                    <button class="btn btn-light toolbox-button" data-type="tabela">Tabela</button>
+                    <button class="btn btn-light toolbox-button" data-type="pageBreak">Quebra de Página</button>
+
+                    <hr>
+                    <button id="generate-docx" class="btn btn-success w-100 mt-3">Gerar Documento (.docx)</button>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <h2>Estrutura do Documento</h2>
+                <div id="document-preview">
+                    <!-- O conteúdo será renderizado aqui pelo JavaScript -->
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <h2>Previsualização do docx</h2>
+                
+            </div>
+
+
+        </div>
+    </div>
+
+    <!-- Modais (Texto Simples, Texto Rico, Referências, Imagem) - Sem alterações -->
+    <div class="modal fade" id="textInputModal" tabindex="-1" aria-labelledby="textInputModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="textInputModalLabel">Inserir Texto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="textInputForm">
+                        <div class="mb-3">
+                            <label for="simpleTextInput" class="form-label">Texto:</label>
+                            <input type="text" class="form-control" id="simpleTextInput" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveSimpleText">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="richTextModal" tabindex="-1" aria-labelledby="richTextModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="richTextModalLabel">Editar Texto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="editor"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveRichText">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="referencesModal" tabindex="-1" aria-labelledby="referencesModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="referencesModalLabel">Adicionar Referência Bibliográfica (ABNT)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="referenceForm">
+                        <div class="mb-3">
+                            <label for="refAutores" class="form-label">Autor(es) (SOBRENOME, Nome; ...)</label>
+                            <input type="text" class="form-control" id="refAutores" required
+                                placeholder="Ex: SILVA, João; PEREIRA, Maria">
+                        </div>
+                        <div class="mb-3">
+                            <label for="refTitulo" class="form-label">Título</label>
+                            <input type="text" class="form-control" id="refTitulo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="refSubtitulo" class="form-label">Subtítulo (se houver)</label>
+                            <input type="text" class="form-control" id="refSubtitulo">
+                        </div>
+                        <div class="mb-3">
+                            <label for="refTipo" class="form-label">Tipo</label>
+                            <select class="form-select" id="refTipo">
+                                <option value="artigo">Artigo de Periódico</option>
+                                <option value="livro">Livro</option>
+                                <option value="site">Site/Documento Online</option>
+                                <option value="capitulo">Capítulo de Livro</option>
+                                <option value="tese">Tese/Dissertação</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="refLocal" class="form-label">Local de Publicação (Cidade)</label>
+                            <input type="text" class="form-control" id="refLocal">
+                        </div>
+                        <div class="mb-3">
+                            <label for="refEditora" class="form-label">Editora (se livro)</label>
+                            <input type="text" class="form-control" id="refEditora">
+                        </div>
+                        <div class="mb-3">
+                            <label for="refAno" class="form-label">Ano de Publicação</label>
+                            <input type="number" class="form-control" id="refAno" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="refUrl" class="form-label">URL (se online)</label>
+                            <input type="url" class="form-control" id="refUrl" placeholder="https://...">
+                        </div>
+                        <div class="mb-3">
+                            <label for="refAcesso" class="form-label">Data de Acesso (se online - DD mes. AAAA)</label>
+                            <input type="text" class="form-control" id="refAcesso" placeholder="Ex: 01 maio. 2025">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveReference">Adicionar Referência</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel">Adicionar Imagem</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="imageUpload" class="form-label">Selecione a Imagem:</label>
+                        <input class="form-control" type="file" id="imageUpload"
+                            accept="image/png, image/jpeg, image/gif">
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageCaption" class="form-label">Legenda (Fonte):</label>
+                        <input type="text" class="form-control" id="imageCaption"
+                            placeholder="Ex: Figura 1 - Gráfico de vendas. Fonte: Elaborado pelo autor (2025)">
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageWidth" class="form-label">Largura (cm - opcional):</label>
+                        <input type="number" step="0.1" class="form-control" id="imageWidth" placeholder="Ex: 10">
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageHeight" class="form-label">Altura (cm - opcional):</label>
+                        <input type="number" step="0.1" class="form-control" id="imageHeight" placeholder="Ex: 8">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="saveImage">Salvar Imagem</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- CKEditor 5 UMD Build JS -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/45.0.0/ckeditor5.umd.js"></script>
+
+    <!-- Docx.js (IIFE build) -->
+    <script src="https://cdn.jsdelivr.net/npm/docx@9.4.1/dist/index.iife.min.js"></script>
+
+    <!-- FileSaver.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
+
+    <script>
+        // === Inicialização de Bibliotecas e Variáveis Globais ===
+
+        // Verifica se docx foi carregado
+        if (typeof docx === 'undefined') {
+            console.error("Biblioteca docx não carregada!");
+            alert("Erro crítico: A biblioteca de geração de documentos (docx) não foi carregada. Verifique a conexão e o console.");
+        }
+        // Desestruturação de docx continua igual
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Numbering, Indent, ImageRun, Table, TableRow, TableCell, WidthType, PageBreak, VerticalAlign, BorderStyle, PageOrientation, Footer, Header, PageNumber } = docx;
+
+        // --- CORREÇÃO AQUI: Verifica o objeto CKEDITOR e a propriedade ClassicEditor ---
+        let CKEDITOR_LOADED = false;
+        if (typeof CKEDITOR !== 'undefined' && typeof CKEDITOR.ClassicEditor !== 'undefined') {
+            console.log("CKEditor UMD build carregado com sucesso.");
+            CKEDITOR_LOADED = true;
+            // Podemos desestruturar aqui se quisermos usar ClassicEditor diretamente
+            // const { ClassicEditor, Essentials /*, etc */ } = CKEDITOR;
+        } else {
+            console.error("CKEditor 5 UMD build não carregado ou não expôs CKEDITOR.ClassicEditor!");
+            alert("Erro crítico: O editor de texto (CKEditor) não foi carregado corretamente. Verifique a conexão e o console.");
+        }
+        // --- FIM DA CORREÇÃO ---
+
+
+        let documentElements = [
+            // --- Valores Padrão Baseados na Imagem ---
+            { type: 'logo', content: { fileName: 'logo_unopar.png', caption: '', data: null } },
+            { type: 'instituicao', content: 'UNIVERSIDADE NORTE DO PARANÁ - UNOPAR' },
+            { type: 'curso', content: 'ANÁLISE E MODELAGEM DE SISTEMAS' },
+            { type: 'aluno', content: 'ISAQUE NEVES SANT\'ANA' },
+            { type: 'tituloTrabalho', content: 'Relatório de Aula Prática' },
+            { type: 'disciplina', content: 'ANÁLISE ORIENTADA A OBJETOS' },
+            { type: 'professor', content: 'Vanessa Matias Leite' },
+            { type: 'cidade', content: 'RIO DAS OSTRAS' },
+            { type: 'estado', content: 'RJ' }
+        ];
+        let currentElementType = null;
+        let ckEditorInstance = null;
+
+        // === Instâncias dos Modais Bootstrap === (Sem alterações)
+        const textInputModalEl = document.getElementById('textInputModal');
+        const richTextModalEl = document.getElementById('richTextModal');
+        const referencesModalEl = document.getElementById('referencesModal');
+        const imageModalEl = document.getElementById('imageModal');
+        const textInputModal = textInputModalEl ? new bootstrap.Modal(textInputModalEl) : null;
+        const richTextModal = richTextModalEl ? new bootstrap.Modal(richTextModalEl) : null;
+        const referencesModal = referencesModalEl ? new bootstrap.Modal(referencesModalEl) : null;
+        const imageModal = imageModalEl ? new bootstrap.Modal(imageModalEl) : null;
+
+        // === Lógica do CKEditor (Utilizando CKEDITOR.ClassicEditor) ===
+        if (richTextModalEl) {
+            richTextModalEl.addEventListener('shown.bs.modal', () => {
+                // Só tenta criar se o CKEDITOR foi carregado E a instância não existe
+                if (!ckEditorInstance && CKEDITOR_LOADED) {
+                    // --- CORREÇÃO AQUI: Usa CKEDITOR.ClassicEditor ---
+                    CKEDITOR.ClassicEditor
+                        .create(document.querySelector('#editor'), {
+                            // Configuração do editor UMD (Exemplo da documentação)
+                            // plugins: [ CKEDITOR.Essentials, CKEDITOR.Paragraph, CKEDITOR.Bold, CKEDITOR.Italic, CKEDITOR.Font ], // Precisa referenciar via CKEDITOR.
+                            // toolbar: [ 'undo', 'redo', '|', 'bold', 'italic', '|', 'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor' ],
+                            // Ou usar a configuração mais completa que já tínhamos:
+                            toolbar: {
+                                items: [
+                                    'undo', 'redo',
+                                    '|', 'heading',
+                                    '|', 'bold', 'italic', 'underline', 'strikethrough',
+                                    '|', 'bulletedList', 'numberedList', 'outdent', 'indent',
+                                    '|', 'blockQuote', 'insertTable',
+                                    '|', 'link',
+                                    '|', 'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor'
+                                ],
+                                shouldNotGroupWhenFull: true
+                            },
+                            language: 'pt-br',
+                            licenseKey: 'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3Nzc3NjYzOTksImp0aSI6IjEwODBmYWI3LTM1ZTEtNDgxOS1iNzA0LTY1NDBiZjllYjQyNiIsImxpY2Vuc2VkSG9zdHMiOlsiMTI3LjAuMC4xIiwibG9jYWxob3N0IiwiMTkyLjE2OC4qLioiLCIxMC4qLiouKiIsIjE3Mi4qLiouKiIsIioudGVzdCIsIioubG9jYWxob3N0IiwiKi5sb2NhbCJdLCJ1c2FnZUVuZHBvaW50IjoiaHR0cHM6Ly9wcm94eS1ldmVudC5ja2VkaXRvci5jb20iLCJkaXN0cmlidXRpb25DaGFubmVsIjpbImNsb3VkIiwiZHJ1cGFsIl0sImxpY2Vuc2VUeXBlIjoiZGV2ZWxvcG1lbnQiLCJmZWF0dXJlcyI6WyJEUlVQIl0sInZjIjoiNjUxYmQ0N2MifQ.cLlEIy3aFDZt5T36zvY1YcwLH8VcY-hEqUhFJYxRfwuDdTOeraRLX2VJtOVoJaIAz5hPtpZZETywv8yuo6oY4A',
+                            plugins: [CKEDITOR.Essentials, CKEDITOR.Paragraph, CKEDITOR.Bold, CKEDITOR.Italic, CKEDITOR.Font],
+                            toolbar: [
+                                'undo', 'redo', '|', 'bold', 'italic', '|',
+                                'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor'
+                            ]
+                        })
+                        .then(editor => {
+                            ckEditorInstance = editor;
+                            console.log('CKEditor inicializado:', editor);
+                        })
+                        .catch(error => {
+                            console.error('Erro ao inicializar CKEditor:', error);
+                            alert('Não foi possível inicializar o editor de texto.');
+                            // Poderia desabilitar botões que dependem do editor
+                        });
+                    // --- FIM DA CORREÇÃO ---
+                } else if (ckEditorInstance) {
+                    ckEditorInstance.editing.view.focus();
+                } else if (!CKEDITOR_LOADED) {
+                    console.warn("Tentativa de abrir modal de texto rico, mas CKEditor não foi carregado.");
+                    // Poderia mostrar uma mensagem no modal indicando o problema
+                    document.querySelector('#editor').innerHTML = '<p class="text-danger">Erro: Editor não pôde ser carregado.</p>';
+                }
+            });
+        } else {
+            console.error("Elemento do modal richTextModal não encontrado.");
+        }
+
+        // Limpeza do CKEditor no fechamento do modal (Sem alterações)
+        if (richTextModalEl) {
+            richTextModalEl.addEventListener('hidden.bs.modal', () => {
+                if (ckEditorInstance) {
+                    ckEditorInstance.setData('');
+                    console.log('CKEditor data cleared.');
+                }
+                // Limpa mensagem de erro se houver
+                const editorDiv = document.querySelector('#editor');
+                if (editorDiv && editorDiv.firstChild?.classList?.contains('text-danger')) {
+                    editorDiv.innerHTML = '';
+                }
+            });
+        }
+
+
+        // === Lógica para Adicionar/Manipular Elementos === (Sem alterações na lógica principal)
+        document.getElementById('toolbox')?.addEventListener('click', (event) => {
+            if (event.target.classList.contains('toolbox-button')) {
+                currentElementType = event.target.getAttribute('data-type');
+                const buttonText = event.target.innerText;
+
+                if (['instituicao', 'curso', 'aluno', 'tituloTrabalho', 'disciplina', 'professor', 'cidade', 'estado', 'ano', 'subtitulo'].includes(currentElementType)) {
+                    if (textInputModal && textInputModalEl) {
+                        textInputModalEl.querySelector('#textInputModalLabel').innerText = `Inserir ${buttonText}`;
+                        textInputModalEl.querySelector('#simpleTextInput').value = '';
+                        textInputModal.show();
+                    } else { console.error("Modal de texto simples não encontrado."); }
+                } else if (['resumo', 'introducao', 'desenvolvimento', 'metodos', 'resultados', 'conclusao', 'paragrafo', 'lista'].includes(currentElementType)) {
+                    if (richTextModal && richTextModalEl) {
+                        richTextModalEl.querySelector('#richTextModalLabel').innerText = `Editar ${buttonText}`;
+                        richTextModal.show(); // Evento 'shown' cuidará da inicialização/foco
+                    } else { console.error("Modal de texto rico não encontrado."); }
+                } else if (currentElementType === 'referencias') {
+                    if (referencesModal && referencesModalEl) {
+                        referencesModalEl.querySelector('#referenceForm').reset();
+                        referencesModal.show();
+                    } else { console.error("Modal de referências não encontrado."); }
+                } else if (currentElementType === 'imagem' || currentElementType === 'logo') {
+                    if (imageModal && imageModalEl) {
+                        imageModalEl.querySelector('#imageModalLabel').innerText = `Adicionar ${buttonText}`;
+                        imageModalEl.querySelector('#imageUpload').value = null;
+                        imageModalEl.querySelector('#imageCaption').value = '';
+                        imageModalEl.querySelector('#imageWidth').value = '';
+                        imageModalEl.querySelector('#imageHeight').value = '';
+                        imageModal.show();
+                    } else { console.error("Modal de imagem não encontrado."); }
+                } else if (currentElementType === 'pageBreak') {
+                    addElement({ type: 'pageBreak', content: '--- Quebra de Página ---' });
+                } else if (currentElementType === 'tabela') {
+                    alert('Funcionalidade de Tabela ainda não implementada.');
+                    addElement({ type: 'tabela', content: '[Tabela Placeholder]' });
+                } else {
+                    console.warn(`Tipo de elemento não tratado: ${currentElementType}`);
+                    alert(`O tipo de elemento "${buttonText}" ainda não é suportado.`);
+                }
+            }
+        });
+
+        // --- Botões de Salvar dos Modais --- (Sem alterações)
+        document.getElementById('saveSimpleText')?.addEventListener('click', () => {
+            const input = document.getElementById('simpleTextInput');
+            const textValue = input?.value;
+            if (textValue && textValue.trim() !== '') {
+                addElement({ type: currentElementType, content: textValue.trim() });
+                if (textInputModal) textInputModal.hide();
+            } else {
+                alert('Por favor, insira o texto.');
+                input?.focus();
+            }
+        });
+        document.getElementById('saveRichText')?.addEventListener('click', () => {
+            if (ckEditorInstance) {
+                const richTextValue = ckEditorInstance.getData();
+                addElement({ type: currentElementType, content: richTextValue });
+                if (richTextModal) richTextModal.hide();
+            } else {
+                alert('Editor não inicializado ou encontrado.');
+                if (richTextModal) richTextModal.hide();
+            }
+        });
+        document.getElementById('saveReference')?.addEventListener('click', () => {
+            const form = document.getElementById('referenceForm');
+            if (!form) return;
+            const referenceData = {
+                autores: form.querySelector('#refAutores')?.value.trim(),
+                titulo: form.querySelector('#refTitulo')?.value.trim(),
+                subtitulo: form.querySelector('#refSubtitulo')?.value.trim(),
+                tipo: form.querySelector('#refTipo')?.value,
+                local: form.querySelector('#refLocal')?.value.trim(),
+                editora: form.querySelector('#refEditora')?.value.trim(),
+                ano: form.querySelector('#refAno')?.value.trim(),
+                url: form.querySelector('#refUrl')?.value.trim(),
+                acesso: form.querySelector('#refAcesso')?.value.trim(),
+            };
+            if (!referenceData.autores || !referenceData.titulo || !referenceData.ano) {
+                alert('Preencha pelo menos Autor(es), Título e Ano.');
+                return;
+            }
+            addElement({ type: 'referenciaItem', content: referenceData });
+            alert('Referência adicionada com sucesso!');
+            form.reset();
+            form.querySelector('#refAutores')?.focus();
+        });
+        document.getElementById('saveImage')?.addEventListener('click', () => {
+            const fileInput = document.getElementById('imageUpload');
+            const captionInput = document.getElementById('imageCaption');
+            const widthInput = document.getElementById('imageWidth');
+            const heightInput = document.getElementById('imageHeight');
+            const caption = captionInput?.value.trim() ?? '';
+            const widthCm = parseFloat(widthInput?.value);
+            const heightCm = parseFloat(heightInput?.value);
+
+            if (fileInput?.files && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if (!file.type.startsWith('image/')) {
+                    alert('Por favor, selecione um arquivo de imagem válido (PNG, JPG, GIF).');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    addElement({
+                        type: currentElementType,
+                        content: {
+                            data: reader.result,
+                            caption: caption,
+                            widthCm: !isNaN(widthCm) && widthCm > 0 ? widthCm : null,
+                            heightCm: !isNaN(heightCm) && heightCm > 0 ? heightCm : null,
+                            fileName: file.name
+                        }
+                    });
+                    if (imageModal) imageModal.hide();
+                }
+                reader.onerror = function () {
+                    console.error("Erro ao ler o arquivo:", reader.error);
+                    alert("Ocorreu um erro ao carregar a imagem.");
+                }
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert('Por favor, selecione um arquivo de imagem.');
+            }
+        });
+
+        // --- Funções Auxiliares (Manipulação do DOM e Dados) --- (Sem alterações)
+        function addElement(elementData) {
+            documentElements.push(elementData);
+            renderPreview();
+        }
+        function removeElement(index) {
+            if (index >= 0 && index < documentElements.length) {
+                if (confirm(`Tem certeza que deseja remover este elemento "${documentElements[index].type}"?`)) {
+                    documentElements.splice(index, 1);
+                    renderPreview();
+                }
+            } else { console.error("Índice inválido para remoção:", index); }
+        }
+        function renderPreview() {
+            const previewArea = document.getElementById('document-preview');
+            if (!previewArea) { console.error("Área de preview não encontrada!"); return; }
+            previewArea.innerHTML = '';
+            if (documentElements.length === 0) {
+                previewArea.innerHTML = '<p class="text-muted text-center mt-5">Clique nos botões à esquerda para adicionar elementos ao seu trabalho.</p>';
+                return;
+            }
+            documentElements.forEach((element, index) => {
+                const div = document.createElement('div');
+                div.classList.add('preview-element');
+                div.setAttribute('data-index', index);
+                div.setAttribute('title', `Elemento ${index + 1}: ${element.type}`);
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '×';
+                removeBtn.classList.add('btn', 'btn-danger', 'btn-sm', 'remove-element-btn');
+                removeBtn.setAttribute('aria-label', 'Remover elemento');
+                removeBtn.onclick = (e) => { e.stopPropagation(); removeElement(index); };
+                div.appendChild(removeBtn);
+                const typeLabel = document.createElement('small');
+                typeLabel.textContent = `Tipo: ${element.type}`;
+                typeLabel.style.fontWeight = 'bold';
+                div.appendChild(typeLabel);
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('preview-element-content');
+                if (element.type === 'referenciaItem') {
+                    let refText = `Ref: ${element.content.autores || '[Sem Autor]'}. `;
+                    refText += `${element.content.titulo || '[Sem Título]'}. `;
+                    refText += `${element.content.ano || '[Sem Ano]'}.`;
+                    contentDiv.textContent = refText;
+                } else if (element.type === 'imagem' || element.type === 'logo') {
+                    let imgText = `Imagem: ${element.content.fileName || '[Nome não disponível]'}`;
+                    if (element.content.caption) { imgText += ` - Legenda: ${element.content.caption}`; }
+                    if (element.content.widthCm || element.content.heightCm) { imgText += ` (Tamanho: ${element.content.widthCm || '?'}cm x ${element.content.heightCm || '?'}cm)`; }
+                    contentDiv.textContent = imgText;
+                } else if (element.type === 'pageBreak') {
+                    contentDiv.textContent = element.content;
+                    contentDiv.style.textAlign = 'center';
+                    contentDiv.style.fontStyle = 'italic';
+                    contentDiv.style.color = '#6c757d';
+                } else if (typeof element.content === 'string') {
+                    if (/<[a-z][\s\S]*>/i.test(element.content)) {
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = element.content;
+                        contentDiv.textContent = tempDiv.textContent || tempDiv.innerText || "[Conteúdo Rico]";
+                        if (!contentDiv.textContent.trim()) {
+                            contentDiv.textContent = "[Conteúdo Rico Vazio]";
+                            contentDiv.style.fontStyle = 'italic';
+                        }
+                    } else {
+                        contentDiv.textContent = element.content;
+                    }
+                } else {
+                    contentDiv.textContent = '[Conteúdo complexo ou não textual]';
+                    contentDiv.style.fontStyle = 'italic';
+                    console.warn("Preview não definido para tipo de conteúdo:", element);
+                }
+                div.appendChild(contentDiv);
+                previewArea.appendChild(div);
+            });
+        }
+
+        // --- Geração do Documento DOCX --- (Sem alterações na lógica interna)
+        document.getElementById('generate-docx')?.addEventListener('click', generateDocx);
+        function generateDocx() { /* ... toda a lógica de estilos, processamento e Packer ... */
+            if (documentElements.length === 0) {
+                alert('Adicione elementos ao documento antes de gerar o DOCX.');
+                return;
+            }
+            if (typeof Packer === 'undefined' || typeof Document === 'undefined') {
+                alert('Erro: Biblioteca docx não está pronta. Não é possível gerar o documento.');
+                return;
+            }
+
+            console.log("Iniciando geração do DOCX...");
+            // console.log("Elementos para processar:", JSON.stringify(documentElements));
+
+            const styles = { /* ... estilos ABNT ... */
+                paragraphStyles: [
+                    { id: "CorpoTexto", name: "Corpo Texto", basedOn: "Normal", next: "Normal", quickFormat: true, run: { font: "Times New Roman", size: 24 }, paragraph: { spacing: { line: 360, lineRule: "auto" }, indent: { firstLine: 708.75 }, alignment: AlignmentType.JUSTIFIED } },
+                    { id: "Legenda", name: "Legenda", basedOn: "Normal", next: "Normal", quickFormat: true, run: { font: "Times New Roman", size: 20 }, paragraph: { spacing: { before: 120, after: 120 }, alignment: AlignmentType.CENTER } },
+                    { id: "TituloSecaoPrincipal", name: "Título Seção Principal", basedOn: "Normal", next: "Normal", quickFormat: true, run: { font: "Arial", size: 24, bold: true, allCaps: true }, paragraph: { spacing: { before: 360, after: 120 }, alignment: AlignmentType.LEFT } },
+                    { id: "TituloSecaoSecundaria", name: "Título Seção Secundaria", basedOn: "Normal", next: "Normal", quickFormat: true, run: { font: "Arial", size: 24, allCaps: true }, paragraph: { spacing: { before: 240, after: 120 }, alignment: AlignmentType.LEFT } },
+                    { id: "ReferenciaABNT", name: "Referencia ABNT", basedOn: "Normal", next: "Normal", quickFormat: true, run: { font: "Times New Roman", size: 24 }, paragraph: { spacing: { line: 240, lineRule: "auto", after: 120 }, alignment: AlignmentType.LEFT } },
+                    { id: "CapaElemento", name: "Capa Elemento", basedOn: "Normal", next: "Normal", quickFormat: true, run: { font: "Arial", size: 24, allCaps: true }, paragraph: { spacing: { before: 120, after: 120 }, alignment: AlignmentType.CENTER } },
+                    { id: "CapaTituloTrabalho", name: "Capa Título Trabalho", basedOn: "CapaElemento", next: "CapaElemento", quickFormat: true, run: { size: 28, bold: true }, paragraph: { spacing: { before: 480, after: 480 } } }
+                ]
+            };
+            const abntNumbering = { /* ... configuração de numeração ... */
+                reference: "abnt-numeracao",
+                levels: [
+                    { level: 0, format: "decimal", text: "%1", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 0, hanging: 0 } } } },
+                    { level: 1, format: "decimal", text: "%1.%2", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 720, hanging: 360 } } } },
+                    { level: 2, format: "decimal", text: "%1.%2.%3", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 1080, hanging: 360 } } } }
+                ]
+            };
+
+            let docChildren = []; let capaElements = []; let corpoElements = []; let refItems = [];
+            documentElements.forEach(element => { /* ... separar elementos ... */
+                if (['logo', 'instituicao', 'curso', 'aluno', 'tituloTrabalho', 'disciplina', 'professor', 'cidade', 'estado', 'ano'].includes(element.type)) { capaElements.push(element); }
+                else if (element.type === 'referenciaItem') { refItems.push(element); }
+                else { corpoElements.push(element); }
+            });
+            capaElements.forEach(element => { /* ... processar capa ... */
+                try {
+                    switch (element.type) {
+                        case 'logo':
+                            if (element.content && element.content.data) { docChildren.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 480 }, children: [new ImageRun({ data: element.content.data, transformation: { width: (element.content.widthCm || 5) * 360000, height: (element.content.heightCm || 5) * 360000 } })] })); }
+                            else { docChildren.push(new Paragraph({ text: "[Logo não carregado]", style: "CapaElemento" })); } break;
+                        case 'tituloTrabalho': docChildren.push(new Paragraph({ text: element.content.toUpperCase(), style: "CapaTituloTrabalho" })); break;
+                        case 'aluno': case 'professor': docChildren.push(new Paragraph({ text: element.content.toUpperCase(), style: "CapaElemento", spacing: { after: 480 } })); break;
+                        default: docChildren.push(new Paragraph({ text: element.content.toUpperCase(), style: "CapaElemento" }));
+                    }
+                } catch (error) { console.error(`Erro capa ${element.type}:`, error); docChildren.push(new Paragraph({ text: `[ERRO CAPA: ${element.type}]`, run: { color: "FF0000" } })); }
+            });
+            if (capaElements.length > 0) { docChildren.push(new Paragraph({ children: [new PageBreak()] })); }
+            docChildren.push(new Paragraph({ children: [new docx.TableOfContents("Sumário", { hyperlink: true, headingStyleRange: "1-3" })] }));
+            docChildren.push(new Paragraph({ children: [new PageBreak()] }));
+            corpoElements.forEach(element => { /* ... processar corpo ... */
+                try {
+                    switch (element.type) {
+                        case 'resumo': case 'introducao': case 'desenvolvimento': case 'metodos': case 'resultados': case 'conclusao':
+                            docChildren.push(new Paragraph({ text: element.type.toUpperCase(), heading: HeadingLevel.HEADING_1, numbering: { reference: abntNumbering.reference, level: 0 }, spacing: { before: 480, after: 240 } }));
+                            docChildren = docChildren.concat(convertHtmlToDocxElements(element.content, "CorpoTexto")); break;
+                        case 'subtitulo':
+                            docChildren.push(new Paragraph({ text: element.content, heading: HeadingLevel.HEADING_2, numbering: { reference: abntNumbering.reference, level: 1 }, spacing: { before: 240, after: 120 } })); break;
+                        case 'paragrafo': docChildren = docChildren.concat(convertHtmlToDocxElements(element.content, "CorpoTexto")); break;
+                        case 'lista': docChildren = docChildren.concat(convertHtmlToDocxElements(element.content, "CorpoTexto")); break;
+                        case 'imagem':
+                            if (element.content && element.content.data) {
+                                docChildren.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 120, after: 0 }, children: [new ImageRun({ data: element.content.data, transformation: { width: (element.content.widthCm || 12) * 360000, height: (element.content.heightCm || 9) * 360000 } })] }));
+                                if (element.content.caption) { docChildren.push(new Paragraph({ text: element.content.caption, style: "Legenda", spacing: { after: 120 } })); }
+                            } else { docChildren.push(new Paragraph({ text: "[Imagem não carregada]", style: "CorpoTexto" })); } break;
+                        case 'tabela': docChildren.push(new Paragraph({ text: "[Tabela Placeholder]", style: "CorpoTexto" })); break;
+                        case 'pageBreak': docChildren.push(new Paragraph({ children: [new PageBreak()] })); break;
+                        case 'referencias':
+                            docChildren.push(new Paragraph({ text: "REFERÊNCIAS", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, spacing: { before: 480, after: 240 } }));
+                            refItems.forEach((refElement) => { docChildren.push(formatReferenceABNT(refElement.content)); }); break;
+                        default: console.warn(`Elemento não renderizado: ${element.type}`); docChildren.push(new Paragraph({ text: `[Não suportado: ${element.type}]`, style: "CorpoTexto" }));
+                    }
+                } catch (error) { console.error(`Erro corpo ${element.type} (idx ${documentElements.indexOf(element)}):`, error); docChildren.push(new Paragraph({ text: `[ERRO CORPO: ${element.type}]`, run: { color: "FF0000" } })); }
+            });
+
+            try { /* ... Criação do Document e Packer ... */
+                const doc = new Document({
+                    features: { updateFields: true }, styles: styles, numbering: { config: [abntNumbering] },
+                    sections: [{
+                        properties: { page: { margin: { top: 3 * 567, bottom: 2 * 567, left: 3 * 567, right: 2 * 567 }, pageNumbers: { start: 1, formatType: "decimal" } } },
+                        headers: { default: new Header({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ children: [PageNumber.CURRENT], font: "Arial", size: 20 })] })] }), first: new Header({ children: [] }) },
+                        footers: { default: new Footer({ children: [] }), first: new Footer({ children: [] }) },
+                        children: docChildren
+                    }]
+                });
+                Packer.toBlob(doc).then(blob => {
+                    console.log("DOCX Blob gerado.");
+                    if (typeof saveAs !== 'undefined') { saveAs(blob, "trabalho-academico-gerado.docx"); console.log("Download iniciado."); }
+                    else { console.error("saveAs não definido."); alert("Erro: Download não pode ser iniciado."); }
+                }).catch(err => { console.error("Erro Packer.toBlob:", err); alert("Erro ao gerar DOCX Blob."); });
+            } catch (error) { console.error("Erro Document/Packer:", error); alert("Erro fatal na montagem do DOCX."); }
+        }
+
+        // --- Funções de Conversão HTML -> DOCX --- (Sem alterações)
+        function convertHtmlToDocxElements(htmlString, baseStyleId) { /* ... lógica de conversão ... */
+            if (!htmlString || typeof htmlString !== 'string') return [];
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlString.trim();
+            let elements = [];
+            tempDiv.childNodes.forEach(node => processHtmlNodeRecursive(node, elements, baseStyleId, 0));
+            if (elements.length === 0 && tempDiv.textContent?.trim()) { elements.push(new Paragraph({ text: tempDiv.textContent.trim(), style: baseStyleId })); }
+            return elements;
+        }
+        function processHtmlNodeRecursive(node, docxElements, currentStyleId, listLevel, isListItem = false) { /* ... lógica recursiva ... */
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent;
+                if (text.trim()) { if (!isListItem) { docxElements.push(new Paragraph({ text: text, style: currentStyleId })); } }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tagName = node.tagName.toUpperCase(); let childrenRuns = [];
+                switch (tagName) {
+                    case 'P': node.childNodes.forEach(child => processHtmlFormattingNode(child, childrenRuns)); if (childrenRuns.length > 0) { docxElements.push(new Paragraph({ children: childrenRuns, style: currentStyleId })); } else if (node.textContent.trim()) { docxElements.push(new Paragraph({ text: node.textContent, style: currentStyleId })); } else { docxElements.push(new Paragraph({ style: currentStyleId })); } break;
+                    case 'H1': case 'H2': case 'H3': case 'H4': case 'H5': case 'H6': node.childNodes.forEach(child => processHtmlFormattingNode(child, childrenRuns)); const headingLevel = HeadingLevel[`HEADING_${tagName.substring(1)}`]; if (childrenRuns.length > 0) { docxElements.push(new Paragraph({ children: childrenRuns, heading: headingLevel, style: currentStyleId })); } else if (node.textContent.trim()) { docxElements.push(new Paragraph({ text: node.textContent.trim(), heading: headingLevel, style: currentStyleId })); } break;
+                    case 'UL': case 'OL': node.childNodes.forEach(childNode => { if (childNode.tagName?.toUpperCase() === 'LI') { processHtmlNodeRecursive(childNode, docxElements, currentStyleId, listLevel, true); } }); break;
+                    case 'LI': node.childNodes.forEach(child => processHtmlFormattingNode(child, childrenRuns)); if (childrenRuns.length > 0) { docxElements.push(new Paragraph({ children: childrenRuns, bullet: { level: listLevel }, style: currentStyleId })); } else if (node.textContent.trim()) { docxElements.push(new Paragraph({ text: node.textContent.trim(), bullet: { level: listLevel }, style: currentStyleId })); } node.childNodes.forEach(childNode => { if (childNode.tagName?.toUpperCase() === 'UL' || childNode.tagName?.toUpperCase() === 'OL') { processHtmlNodeRecursive(childNode, docxElements, currentStyleId, listLevel + 1); } }); break;
+                    case 'BLOCKQUOTE': let quoteElements = []; node.childNodes.forEach(child => processHtmlNodeRecursive(child, quoteElements, "CorpoTexto", listLevel)); docxElements = docxElements.concat(quoteElements); break;
+                    case 'TABLE': docxElements.push(new Paragraph({ text: "[Tabela HTML não convertida]", style: currentStyleId })); break;
+                    case 'BR': break; // Ignora BR por enquanto
+                    case 'IMG': console.warn("IMG tag in HTML not processed."); docxElements.push(new Paragraph({ text: `[Imagem inline: ${node.getAttribute('src') || 'sem src'}]`, style: currentStyleId })); break;
+                    case 'SPAN': case 'DIV': node.childNodes.forEach(child => processHtmlNodeRecursive(child, docxElements, currentStyleId, listLevel)); break;
+                    case 'STRONG': case 'B': case 'EM': case 'I': case 'U': case 'S': case 'SUP': case 'SUB': case 'FONT': case 'A': let pRuns = []; processHtmlFormattingNode(node, pRuns); if (pRuns.length > 0) { docxElements.push(new Paragraph({ children: pRuns, style: currentStyleId })); } break;
+                    default: console.warn(`Tag HTML não tratada: ${tagName}`); node.childNodes.forEach(child => processHtmlNodeRecursive(child, docxElements, currentStyleId, listLevel));
+                }
+            }
+        }
+        function processHtmlFormattingNode(node, runsArray) { /* ... lógica de formatação para TextRun ... */
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (node.textContent.trim()) { runsArray.push(new TextRun(node.textContent)); }
+                else if (runsArray.length > 0 && !node.textContent.includes('\n') && node.textContent === ' ' && node.previousSibling && node.nextSibling) { runsArray.push(new TextRun(" ")); }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                let runOptions = {}; const tagName = node.tagName.toUpperCase();
+                switch (tagName) {
+                    case 'STRONG': case 'B': runOptions.bold = true; break; case 'EM': case 'I': runOptions.italics = true; break; case 'U': runOptions.underline = {}; break; case 'S': case 'STRIKE': runOptions.strike = true; break; case 'SUP': runOptions.superScript = true; break; case 'SUB': runOptions.subScript = true; break;
+                    case 'A': runOptions.style = "Hyperlink"; console.warn("Links <a> convertidos como texto."); break;
+                    case 'FONT': if (node.hasAttribute('color')) runOptions.color = node.getAttribute('color').replace('#', ''); if (node.hasAttribute('face')) runOptions.font = node.getAttribute('face'); break;
+                    case 'SPAN': if (node.style.fontWeight === 'bold' || parseInt(node.style.fontWeight) >= 700) runOptions.bold = true; if (node.style.fontStyle === 'italic') runOptions.italics = true; if (node.style.textDecorationLine?.includes('underline')) runOptions.underline = {}; if (node.style.textDecorationLine?.includes('line-through')) runOptions.strike = true; if (node.style.color) runOptions.color = convertCssColorToHex(node.style.color); if (node.style.backgroundColor) runOptions.shading = { fill: convertCssColorToHex(node.style.backgroundColor) }; if (node.style.fontSize) runOptions.size = convertCssFontSizeToPt(node.style.fontSize) * 2; if (node.style.fontFamily) runOptions.font = node.style.fontFamily.split(',')[0].replace(/['"]/g, ''); break;
+                    case 'BR': runsArray.push(new TextRun({ break: 1 })); return;
+                }
+                let childRuns = []; node.childNodes.forEach(child => processHtmlFormattingNode(child, childRuns));
+                childRuns.forEach(childRun => { if (childRun instanceof TextRun) { const existingOptions = childRun.root.find(item => item.key === 'w:rPr')?.root.reduce((opts, prop) => { if (prop.key === 'w:b') opts.bold = true; if (prop.key === 'w:i') opts.italics = true; if (prop.key === 'w:u') opts.underline = {}; if (prop.key === 'w:strike') opts.strike = true; if (prop.key === 'w:vertAlign' && prop.root.find(a => a.key === 'w:val')?.root[1] === 'superscript') opts.superScript = true; if (prop.key === 'w:vertAlign' && prop.root.find(a => a.key === 'w:val')?.root[1] === 'subscript') opts.subScript = true; if (prop.key === 'w:color') opts.color = prop.root.find(a => a.key === 'w:val')?.root[1]; if (prop.key === 'w:sz') opts.size = parseInt(prop.root.find(a => a.key === 'w:val')?.root[1]); if (prop.key === 'w:rFonts') opts.font = prop.root.find(a => a.key === 'w:ascii')?.root[1]; return opts; }, {}) || {}; const textContent = childRun.root.find(item => item.key === 'w:t')?.root[1] || ''; const spaceAttr = childRun.root.find(item => item.key === 'w:t')?.root[0].space; const mergedOptions = { text: textContent, break: childRun.break, ...existingOptions, ...runOptions }; const newRun = new TextRun(mergedOptions); if (spaceAttr) { const textElement = newRun.root.find(el => el.key === 'w:t'); if (textElement) { textElement.root[0].space = spaceAttr; } } runsArray.push(newRun); } else { runsArray.push(childRun); } });
+            }
+        }
+        function convertCssColorToHex(color) { /* ... */ if (!color) return undefined; color = color.toLowerCase(); if (color.startsWith('#')) return color.substring(1); if (color.startsWith('rgb')) { try { const p = color.match(/\d+/g); if (!p || p.length < 3) return; return p.slice(0, 3).map(x => { const h = parseInt(x).toString(16); return h.length === 1 ? "0" + h : h; }).join(''); } catch (e) { return; } } return; }
+        function convertCssFontSizeToPt(size) { /* ... */ if (!size) return 12; const v = parseFloat(size); if (isNaN(v)) return 12; if (size.endsWith('pt')) return v; if (size.endsWith('px')) return v * 0.75; if (size.endsWith('em')) return v * 12; if (size.endsWith('%')) return (v / 100) * 12; return 12; }
+
+        // --- Função para Formatar Referência ABNT --- (Sem alterações)
+        function formatReferenceABNT(data) { /* ... lógica de formatação de referência ... */
+            let runs = []; if (data.autores) { const a = data.autores.split(';').map(x => x.trim()).filter(x => x); if (a.length > 0) { const f = a.map(x => { const p = x.split(','); const s = p[0].trim().toUpperCase(); const n = p.length > 1 ? p.slice(1).join(',').trim() : ''; return { s, n }; }); if (f.length > 3) { runs.push(new TextRun(`${f[0].s}, ${f[0].n}`)); runs.push(new TextRun(" et al.")); } else { f.forEach((x, i) => { runs.push(new TextRun(`${x.s}, ${x.n}`)); if (i < f.length - 1) runs.push(new TextRun("; ")); }); } runs.push(new TextRun(". ")); } } if (data.titulo) { const b = ['livro', 'tese', 'anais'].includes(data.tipo); runs.push(new TextRun({ text: data.titulo, bold: b })); if (data.subtitulo) { runs.push(new TextRun(`: ${data.subtitulo}`)); } runs.push(new TextRun(". ")); } if (data.tipo === 'livro' || data.tipo === 'tese') { if (data.local) runs.push(new TextRun(`${data.local}: `)); if (data.editora) runs.push(new TextRun(`${data.editora}, `)); if (data.ano) runs.push(new TextRun(`${data.ano}.`)); } else if (data.tipo === 'artigo') { if (data.ano) runs.push(new TextRun(` ${data.ano}.`)); } else { if (data.ano) runs.push(new TextRun(` ${data.ano}.`)); } if (data.url) { runs.push(new TextRun(" Disponível em: ")); runs.push(new TextRun(`<${data.url}>`)); runs.push(new TextRun(". ")); } if (data.acesso && data.url) { runs.push(new TextRun(`Acesso em: ${data.acesso}.`)); } return new Paragraph({ children: runs, style: "ReferenciaABNT" });
+        }
+
+        // === Inicialização da Página ===
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM Carregado. Renderizando preview inicial.");
+            renderPreview();
+        });
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload e Visualização de Arquivo</title>
+    <!-- Provide proper viewport information so that the layout works on mobile devices. -->
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <style>
+        /* Esconde o input de arquivo padrão */
+        #fileInput {
+            display: none;
+        }
+        /* Estilização básica para o botão e status */
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .controls {
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-bottom: 1px solid #ccc;
+            flex-shrink: 0; /* Impede que os controles encolham */
+        }
+        #pspdfkit {
+           /* width: 100%; height: 100vh; */ /* Removido para ajustar ao layout flex */
+           flex-grow: 1; /* Faz o container do PDF ocupar o espaço restante */
+           border: none; /* Remove qualquer borda padrão */
+           min-height: 300px; /* Altura mínima caso o flex não funcione perfeitamente */
+        }
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        #status {
+            margin-left: 15px;
+            font-style: italic;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <!-- Botão que o usuário clica -->
+        <button id="uploadButton">Carregar Arquivo (.doc, .docx, .pdf, etc.)</button>
+        <!-- Input de arquivo escondido, que será acionado pelo botão -->
+        <input type="file" id="fileInput" accept=".doc,.docx,.pdf,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg" />
+        <span id="status">Nenhum arquivo selecionado.</span>
+    </div>
+
+    <!-- Element where PSPDFKit will be mounted. -->
+    <div id="pspdfkit"></div>
+
+    <!-- Inclui a biblioteca PSPDFKit -->
+    <script src="assets/pspdfkit.js"></script>
+
+    <script>
+        // Referências aos elementos HTML
+        const uploadButton = document.getElementById('uploadButton');
+        const fileInput = document.getElementById('fileInput');
+        const statusSpan = document.getElementById('status');
+        const pspdfkitContainer = document.getElementById('pspdfkit');
+
+        let pspdfkitInstance = null; // Para guardar a instância do PSPDFKit
+
+        // 1. Quando o botão é clicado, aciona o input de arquivo escondido
+        uploadButton.addEventListener('click', () => {
+            fileInput.click(); // Abre o seletor de arquivos do sistema
+        });
+
+        // 2. Quando um arquivo é selecionado no input
+        fileInput.addEventListener('change', (event) => {
+            // Pega o primeiro arquivo selecionado (FileList)
+            const file = event.target.files[0];
+
+            if (file) {
+                // O objeto 'file' aqui JÁ É UM BLOB (mais especificamente, um File, que herda de Blob)
+                console.log('Arquivo selecionado:', file);
+                console.log('Nome:', file.name);
+                console.log('Tamanho:', file.size, 'bytes');
+                console.log('Tipo MIME:', file.type);
+                console.log('É um Blob?', file instanceof Blob); // true
+                console.log('É um File?', file instanceof File); // true
+
+                // Atualiza o status na tela
+                statusSpan.textContent = `Arquivo selecionado: ${file.name}`;
+
+                // **OPCIONAL: Carregar o arquivo no PSPDFKit**
+                // Cria uma URL temporária para o Blob (arquivo)
+                const documentBlobObjectUrl = URL.createObjectURL(file);
+                console.log('URL do Objeto Blob:', documentBlobObjectUrl);
+
+                // Configuração para carregar o Blob no PSPDFKit
+                const config = {
+                    container: pspdfkitContainer, // Onde montar o visualizador
+                    document: documentBlobObjectUrl, // A URL do Blob
+                    // licenseKey: 'YOUR_LICENSE_KEY', // Descomente se tiver uma chave de licença
+                    baseUrl: window.location.origin + '/assets/' // Necessário para carregar assets corretamente
+                };
+
+                // Limpa a instância anterior do PSPDFKit, se existir
+                if (pspdfkitInstance) {
+                    PSPDFKit.unload(pspdfkitContainer);
+                    pspdfkitInstance = null;
+                }
+
+                // Carrega o PSPDFKit com o novo documento (Blob)
+                PSPDFKit.load(config)
+                    .then(function (instance) {
+                        pspdfkitInstance = instance; // Guarda a nova instância
+                        console.log('PSPDFKit carregado com o arquivo Blob', instance);
+
+                        // IMPORTANTE: Revoga a URL do objeto Blob depois que o PSPDFKit a carregou.
+                        // Isso libera memória que o navegador estava usando para manter essa URL ativa.
+                        // O PSPDFKit já leu os dados do Blob neste ponto.
+                        URL.revokeObjectURL(documentBlobObjectUrl);
+                        console.log('URL do Objeto Blob revogada.');
+                    })
+                    .catch(function (error) {
+                        console.error("Erro ao carregar PSPDFKit:", error.message);
+                        statusSpan.textContent = `Erro ao carregar ${file.name}: ${error.message}`;
+                        // Revoga a URL mesmo em caso de erro
+                        URL.revokeObjectURL(documentBlobObjectUrl);
+                        console.log('URL do Objeto Blob revogada (após erro).');
+                        // Limpa o container em caso de erro
+                        pspdfkitContainer.innerHTML = '<p style="color: red; padding: 20px;">Falha ao carregar o documento.</p>';
+                    });
+
+                // Limpa o valor do input para permitir selecionar o mesmo arquivo novamente
+                fileInput.value = null;
+
+            } else {
+                // Nenhum arquivo foi selecionado (usuário cancelou)
+                statusSpan.textContent = 'Nenhum arquivo selecionado.';
+                console.log('Nenhum arquivo foi selecionado.');
+            }
+        });
+
+        // **NOTA SOBRE UPLOAD PARA SERVIÇO DE BLOB (Azure, AWS, etc.)**
+        // Se o objetivo fosse enviar o 'file' (Blob) para um serviço na nuvem,
+        // você usaria a API Fetch ou XMLHttpRequest aqui, junto com o SDK
+        // apropriado ou chamadas de API REST para o serviço de destino.
+        // Exemplo conceitual (NÃO FUNCIONAL SEM BACKEND/CONFIGURAÇÃO):
+        /*
+        function uploadToCloud(fileBlob) {
+            const formData = new FormData();
+            formData.append('file', fileBlob, fileBlob.name);
+
+            fetch('/api/upload-to-blob-storage', { // URL do seu endpoint de backend
+                method: 'POST',
+                body: formData,
+                // headers: { 'Authorization': 'Bearer YOUR_TOKEN' } // Exemplo de autenticação
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Upload bem-sucedido:', data);
+                statusSpan.textContent = `Upload de ${fileBlob.name} concluído!`;
+            })
+            .catch(error => {
+                console.error('Erro no upload:', error);
+                statusSpan.textContent = `Erro no upload de ${fileBlob.name}.`;
+            });
+        }
+
+        // Você chamaria uploadToCloud(file) dentro do event listener 'change'
+        // em vez de ou além de carregar no PSPDFKit.
+        */
+
+    </script>
+</body>
+</html>
